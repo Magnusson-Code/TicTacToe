@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2c4a30">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lottas 3 i rad">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>Lottas 3 i rad</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap');
+
+  * {
+    box-sizing: border-box;
+    margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #2c4a30;
+    background-image:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.05) 0%, transparent 55%),
+      radial-gradient(ellipse at 70% 80%, rgba(0,0,0,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.08) 0%, transparent 80%);
+    /* Safe area for notch/home bar */
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  /* ── Frame ── */
+  .frame {
+    background: #2a472e;
+    border: 5px solid #d4c9a8;
+    border-radius: 8px;
+    padding: 20px 24px 24px;
+    box-shadow:
+      0 0 0 2px rgba(212,201,168,0.25),
+      0 8px 40px rgba(0,0,0,0.5),
+      inset 0 0 50px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ── Title ── */
+  h1 {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(36px, 10vw, 52px);
+    color: #f0ead8;
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 10px;
+    transform: rotate(-1deg);
+    filter: blur(0.3px);
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+    user-select: none;
+  }
+
+  /* ── Status ── */
+  #status {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(20px, 5.5vw, 26px);
+    color: #d4f0d4;
+    text-align: center;
+    min-height: 32px;
+    margin-bottom: 14px;
+    transition: opacity 0.25s;
+    user-select: none;
+  }
+
+  /* ── Board ── */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: min(72vw, 300px);
+    height: min(72vw, 300px);
+    position: relative;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+  }
+
+  /* Grid lines as cell borders — cross-browser reliable */
+  .cell:nth-child(3n+1),
+  .cell:nth-child(3n+2) {
+    border-right: 3px solid rgba(212,201,168,0.85);
+  }
+  .cell:nth-child(-n+6) {
+    border-bottom: 3px solid rgba(212,201,168,0.85);
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+  .cell:active { background: rgba(255,255,255,0.04); border-radius: 4px; }
+
+  /* ── Tokens ── */
+  .token {
+    width: min(20vw, 80px);
+    height: min(20vw, 80px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: clamp(20px, 5.5vw, 28px);
+    font-weight: 900;
+    line-height: 1;
+    user-select: none;
+    animation: popIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.2); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .token-x {
+    background: linear-gradient(170deg, #2e2e2e 0%, #111 100%);
+    box-shadow: 0 4px 0 #000, 0 6px 12px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1);
+    color: #d8d8d8;
+  }
+  .token-o {
+    background: linear-gradient(170deg, #f7e8c8 0%, #dfc99a 100%);
+    box-shadow: 0 4px 0 #a8853c, 0 6px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.55);
+    color: #5a3e10;
+  }
+
+  .token.winner { animation: pulse 0.5s ease-in-out infinite alternate; }
+  .token-x.winner { box-shadow: 0 0 0 4px rgba(255,255,255,0.55), 0 4px 0 #000, 0 8px 16px rgba(0,0,0,0.5); }
+  .token-o.winner { box-shadow: 0 0 0 4px rgba(255,255,255,0.55), 0 4px 0 #a8853c, 0 8px 16px rgba(0,0,0,0.4); }
+  @keyframes pulse {
+    from { filter: brightness(1); }
+    to   { filter: brightness(1.2); }
+  }
+
+  /* ── Player indicators ── */
+  .players {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .player-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.4;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .player-info.active {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+  .player-chip {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 15px; font-weight: 900; line-height: 1;
+  }
+  .chip-x {
+    background: linear-gradient(170deg, #2e2e2e 0%, #111 100%);
+    box-shadow: 0 3px 0 #000, 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    color: #d8d8d8;
+  }
+  .chip-x::after { content: 'X'; }
+  .chip-o {
+    background: linear-gradient(170deg, #f7e8c8 0%, #dfc99a 100%);
+    box-shadow: 0 3px 0 #a8853c, 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.55);
+    color: #5a3e10;
+  }
+  .chip-o::after { content: 'O'; }
+  .player-name {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(16px, 4.5vw, 20px);
+    color: #d4f0d4;
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Restart button ── */
+  #restart {
+    display: none;
+    padding: 12px 36px;
+    background: transparent;
+    border: 2px solid rgba(212,201,168,0.7);
+    color: #d4c9a8;
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.15s;
+    width: 100%;
+    max-width: 220px;
+  }
+  #restart:active { background: rgba(212,201,168,0.15); }
+  #restart.visible { display: block; }
+
+  /* ── Name entry overlay ── */
+  #name-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+  #name-overlay.hidden { display: none; }
+
+  .name-box {
+    background: #2a472e;
+    border: 5px solid #d4c9a8;
+    border-radius: 8px;
+    padding: 32px 28px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    width: 100%;
+    max-width: 340px;
+  }
+  .name-box h2 {
+    font-family: 'Caveat', cursive;
+    font-size: 34px;
+    color: #f0ead8;
+    margin-bottom: 24px;
+    transform: rotate(-1deg);
+    display: block;
+    filter: blur(0.3px);
+  }
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .name-chip {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 15px; font-weight: 900; line-height: 1;
+  }
+  .name-chip.x-chip {
+    background: linear-gradient(170deg, #2e2e2e 0%, #111 100%);
+    box-shadow: 0 3px 0 #000, 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    color: #d8d8d8;
+  }
+  .name-chip.x-chip::after { content: 'X'; }
+  .name-chip.o-chip {
+    background: linear-gradient(170deg, #f7e8c8 0%, #dfc99a 100%);
+    box-shadow: 0 3px 0 #a8853c, 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.55);
+    color: #5a3e10;
+  }
+  .name-chip.o-chip::after { content: 'O'; }
+
+  .name-box input {
+    flex: 1;
+    background: rgba(0,0,0,0.25);
+    border: 2px solid rgba(212,201,168,0.5);
+    border-radius: 3px;
+    color: #f0ead8;
+    font-family: 'Caveat', cursive;
+    /* 16px prevents iOS zoom on focus */
+    font-size: 16px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .name-box input:focus { border-color: rgba(212,201,168,0.9); }
+  .name-box input::placeholder { color: rgba(212,201,168,0.4); }
+
+  .name-box button {
+    margin-top: 8px;
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 2px solid rgba(212,201,168,0.7);
+    color: #d4c9a8;
+    font-family: 'Caveat', cursive;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+  .name-box button:active { background: rgba(212,201,168,0.15); }
+</style>
+</head>
+<body>
+
+<!-- Name entry overlay -->
+<div id="name-overlay">
+  <div class="name-box">
+    <h2>Vilka spelar?</h2>
+    <div class="name-row">
+      <div class="name-chip x-chip"></div>
+      <input id="name1" type="text" maxlength="16" placeholder="Spelare 1" autocomplete="off" />
+    </div>
+    <div class="name-row">
+      <div class="name-chip o-chip"></div>
+      <input id="name2" type="text" maxlength="16" placeholder="Spelare 2" autocomplete="off" />
+    </div>
+    <button onclick="startGame()">Spela!</button>
+  </div>
+</div>
+
+<div class="frame">
+  <h1>Lottas 3 i rad</h1>
+  <div id="status">Välj spelare ovan</div>
+
+  <div class="board" id="board">
+    <div class="cell" data-i="0" onclick="play(0)"></div>
+    <div class="cell" data-i="1" onclick="play(1)"></div>
+    <div class="cell" data-i="2" onclick="play(2)"></div>
+    <div class="cell" data-i="3" onclick="play(3)"></div>
+    <div class="cell" data-i="4" onclick="play(4)"></div>
+    <div class="cell" data-i="5" onclick="play(5)"></div>
+    <div class="cell" data-i="6" onclick="play(6)"></div>
+    <div class="cell" data-i="7" onclick="play(7)"></div>
+    <div class="cell" data-i="8" onclick="play(8)"></div>
+  </div>
+
+  <div class="players">
+    <div class="player-info active" id="p1">
+      <div class="player-chip chip-x"></div>
+      <div class="player-name" id="p1name">Spelare 1</div>
+    </div>
+    <div class="player-info" id="p2">
+      <div class="player-chip chip-o"></div>
+      <div class="player-name" id="p2name">Spelare 2</div>
+    </div>
+  </div>
+
+  <button id="restart" onclick="reset()">Spela igen</button>
+</div>
+
+<script>
+  const WINS = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  let board = Array(9).fill(null);
+  let current = 'x';
+  let gameOver = false;
+  let names = { x: 'Spelare 1', o: 'Spelare 2' };
+
+  function startGame() {
+    const n1 = document.getElementById('name1').value.trim();
+    const n2 = document.getElementById('name2').value.trim();
+    names.x = n1 || 'Spelare 1';
+    names.o = n2 || 'Spelare 2';
+    document.getElementById('p1name').textContent = names.x;
+    document.getElementById('p2name').textContent = names.o;
+    document.getElementById('name-overlay').classList.add('hidden');
+    setStatus(names.x + ' börjar!');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('name-overlay').classList.contains('hidden')) {
+      startGame();
+    }
+  });
+
+  function play(i) {
+    if (gameOver || board[i]) return;
+
+    board[i] = current;
+    const cell = document.querySelector(`.cell[data-i="${i}"]`);
+    const token = document.createElement('div');
+    token.className = `token token-${current}`;
+    token.textContent = current.toUpperCase();
+    cell.appendChild(token);
+
+    const winner = checkWin();
+    if (winner) {
+      winner.forEach(idx => {
+        document.querySelector(`.cell[data-i="${idx}"] .token`).classList.add('winner');
+      });
+      setStatus(names[current] + ' vinner!');
+      gameOver = true;
+      document.getElementById('p1').classList.remove('active');
+      document.getElementById('p2').classList.remove('active');
+      document.getElementById('restart').classList.add('visible');
+      return;
+    }
+
+    if (board.every(v => v)) {
+      setStatus('Oavgjort!');
+      gameOver = true;
+      document.getElementById('p1').classList.remove('active');
+      document.getElementById('p2').classList.remove('active');
+      document.getElementById('restart').classList.add('visible');
+      return;
+    }
+
+    current = current === 'x' ? 'o' : 'x';
+    updateIndicators();
+    setStatus(names[current] + ':s tur');
+  }
+
+  function checkWin() {
+    for (const combo of WINS) {
+      if (combo.every(i => board[i] === current)) return combo;
+    }
+    return null;
+  }
+
+  function setStatus(msg) {
+    const el = document.getElementById('status');
+    el.style.opacity = 0;
+    setTimeout(() => { el.textContent = msg; el.style.opacity = 1; }, 150);
+  }
+
+  function updateIndicators() {
+    document.getElementById('p1').classList.toggle('active', current === 'x');
+    document.getElementById('p2').classList.toggle('active', current === 'o');
+  }
+
+  function reset() {
+    board = Array(9).fill(null);
+    current = 'x';
+    gameOver = false;
+    document.querySelectorAll('.cell').forEach(c => c.innerHTML = '');
+    document.getElementById('p1').classList.add('active');
+    document.getElementById('p2').classList.remove('active');
+    document.getElementById('restart').classList.remove('visible');
+    setStatus(names.x + ' börjar!');
+  }
+
+  // Register service worker for offline support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
