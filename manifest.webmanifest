@@ -1,8 +1,8 @@
 {
-  "name": "Lottas 3 i rad",
-  "short_name": "3 i rad",
-  "description": "Tic-tac-toe på griffeltavla",
-  "start_url": "tictactoe-mobile.html",
+  "name": "Tre i rad",
+  "short_name": "Tre i rad",
+  "description": "Tre i rad på griffeltavla",
+  "start_url": "index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#2c4a30",

@@ -1,6 +1,6 @@
-const CACHE = 'lottas-3-i-rad-v1';
+const CACHE = 'tre-i-rad-v1';
 const FILES = [
-  'tictactoe-mobile.html',
+  'index.html',
   'manifest.webmanifest',
   'icon-192.svg',
   'icon-512.svg'
